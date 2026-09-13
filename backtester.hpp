@@ -1,0 +1,94 @@
+#pragma once
+#include <cstdint>
+#include <vector>
+#include <string> 
+
+struct Bar {
+    public:
+    double open;
+    double close;
+    double high;
+    double low;
+    uint64_t timestamp;
+    double volume;
+};
+
+struct TradeStruct {
+    public:
+    double entryPrice;
+    double exitPrice;
+    double shares;
+    double pnl;
+};
+
+struct BlotterStats {
+    public:
+    double winRate;
+    double profitFactor;
+    double avg_win; 
+    double avg_loss; 
+};
+
+std::vector<Bar> loadCSV(const std::string& path);
+
+enum class Decision { Buy, Sell, Hold};
+
+class Strategy {
+    public:
+    virtual int warmup() const = 0; 
+    virtual Decision onBar (const std::vector<Bar>& history) = 0; 
+    virtual ~Strategy() = default; 
+};
+
+class SmaCrossover : public Strategy {
+    public:
+    SmaCrossover(int fast, int slow);
+    Decision onBar(const std::vector<Bar>& history) override;
+    int warmup() const override { return slowWindow; } 
+    private:
+    int fastWindow;
+    int slowWindow;
+    double sma(int window, const std::vector<Bar>& history) const;
+};
+
+class MeanReversion : public Strategy {
+    public:
+    MeanReversion(int window); 
+    Decision onBar(const std::vector<Bar>& history) override; 
+    int warmup() const override { return window; } 
+    private:
+    int window; 
+    double sma(int window, const std::vector<Bar>& history) const; 
+};
+
+
+class Portfolio {
+    public:
+    double cash;
+    double positions;
+    double entryPrice;
+    std::vector<double> equityCurve;
+    std::vector<TradeStruct> trades;
+    Portfolio(double startingCash, double costRate, double targetWeight);
+    void execute(Decision signal, double price);
+    double equity(double price) const;
+    void mark(double price);
+    double costRate; 
+    double targetWeight;
+    BlotterStats tradeStats() const; 
+};  
+
+class BacktestingEngine {
+    public:
+    BacktestingEngine(std::vector<Bar> bars, Strategy* strat, double startingCash, double costRate, double targetWeight);
+    std::vector<Bar> bars;
+    Strategy* strat;
+    Portfolio portfolio;
+    void run(); 
+    double totalReturn() const;
+    double maxDrawdown() const;
+    double sharpe() const;
+    double CAGR() const;
+    double Calmar() const;
+    double sortino() const; 
+};
