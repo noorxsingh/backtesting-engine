@@ -19,10 +19,18 @@ static std::vector<Bar> makeSampleData(int n) {
 
 int main() {
      std::vector<Bar> data = loadCSV("data.csv");
+     int n = data.size() * .7; 
+     std::vector<Bar> train(data.begin(), data.begin() + n); 
+     std::vector<Bar> test(data.begin() + n, data.end()); 
+
+    double bestSharpe = -1e9;
+    int bestWindow = 0; 
     for (int window = 5; window <= 30; window += 5) {
         MeanReversion strategy(window);
-        BacktestingEngine engine(data, &strategy, 10000.0, .001, .5);
-        engine.run();  
+        BacktestingEngine engine(train, &strategy, 10000.0, .001, .5);
+        engine.run();
+        double s = engine.sharpe();
+        if (s > bestSharpe) { bestWindow = window; bestSharpe = s; }
         std::cout << std::fixed << std::setprecision(4);
         std::cout << "=== Backtest results ===\n";
         std::cout << "window: " << window << std::endl; 
@@ -30,4 +38,13 @@ int main() {
         std::cout << "Max drawdown: " << engine.maxDrawdown() * 100.0 << "%\n";
         std::cout << "Sharpe:       " << engine.sharpe() << "\n";
     }
+        MeanReversion strategy(bestWindow);
+        BacktestingEngine engine(test, &strategy, 10000.0, .001, .5);
+        engine.run();
+        std::cout << std::fixed << std::setprecision(4);
+        std::cout << "=== Backtest results ===\n";
+        std::cout << "window: " << bestWindow << std::endl; 
+        std::cout << "Total return: " << engine.totalReturn() * 100.0 << "%\n";
+        std::cout << "Max drawdown: " << engine.maxDrawdown() * 100.0 << "%\n";
+        std::cout << "Sharpe:       " << engine.sharpe() << "\n";
 }

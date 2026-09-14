@@ -2,3 +2,4 @@ bt
 main
 *.o
 .DS_Store
+*.dSYM/
