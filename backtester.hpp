@@ -61,6 +61,18 @@ class MeanReversion : public Strategy {
     double sma(int window, const std::vector<Bar>& history) const; 
 };
 
+class CostModel {
+    public:
+    virtual double fillPrice(double price, Decision side) const = 0;
+    virtual ~CostModel() = default; 
+};
+
+class FlatCost : public CostModel {
+    public:
+    double rate;
+    double fillPrice(double price, Decision side) const override; 
+    FlatCost(double rate); 
+};
 
 class Portfolio {
     public:
@@ -69,18 +81,18 @@ class Portfolio {
     double entryPrice;
     std::vector<double> equityCurve;
     std::vector<TradeStruct> trades;
-    Portfolio(double startingCash, double costRate, double targetWeight);
+    Portfolio(double startingCash, CostModel* costM, double targetWeight);
     void execute(Decision signal, double price);
     double equity(double price) const;
     void mark(double price);
-    double costRate; 
+    CostModel* costM; 
     double targetWeight;
     BlotterStats tradeStats() const; 
 };  
 
 class BacktestingEngine {
     public:
-    BacktestingEngine(std::vector<Bar> bars, Strategy* strat, double startingCash, double costRate, double targetWeight);
+    BacktestingEngine(std::vector<Bar> bars, Strategy* strat, double startingCash, CostModel* costM, double targetWeight);
     std::vector<Bar> bars;
     Strategy* strat;
     Portfolio portfolio;

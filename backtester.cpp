@@ -55,7 +55,18 @@ Decision MeanReversion::onBar(const std::vector<Bar>& history) {
     }
 }
 
-Portfolio::Portfolio(double startingCash, double costRate, double targetWeight) : cash(startingCash), positions(0), costRate(costRate), targetWeight(targetWeight) {};
+FlatCost::FlatCost(double rate) : rate(rate) {}; 
+
+double FlatCost::fillPrice(double price, Decision side) const {
+    if (side == Decision::Buy) {
+        return price * (1 + rate);
+    } else if (side == Decision::Sell) {
+        return price * (1 - rate);
+    } else { return price; } 
+}
+
+
+Portfolio::Portfolio(double startingCash, CostModel* costM, double targetWeight) : cash(startingCash), positions(0), costM(costM), targetWeight(targetWeight) {};
 
 double Portfolio::equity(double price) const {
     return cash + positions * price;
@@ -68,17 +79,16 @@ void Portfolio::mark(double price) {
 
 void Portfolio::execute(Decision signal, double price) {
     double dollarsToDeploy = targetWeight * cash;
-    double buyerCostAdjPrice = price * (1 + costRate); 
-    double sellerCostAdjPrice = price * (1 - costRate);
-    int shares = std::floor(dollarsToDeploy / buyerCostAdjPrice); 
-    double spent = shares * buyerCostAdjPrice;
+
+    int shares = std::floor(dollarsToDeploy / costM->fillPrice(price, signal)); 
+    double spent = shares * costM->fillPrice(price, signal);
 
     if (signal == Decision::Buy && positions == 0 && cash > 0) {
-        entryPrice = buyerCostAdjPrice; 
+        entryPrice = costM->fillPrice(price, signal); 
         positions = std::floor(dollarsToDeploy / entryPrice); 
         cash -= spent;
     } else if (signal == Decision::Sell && positions > 0) {
-        double exitPrice = sellerCostAdjPrice;
+        double exitPrice = costM->fillPrice(price, signal);
         double pnl = (exitPrice - entryPrice) * positions;
         trades.push_back({entryPrice, exitPrice, positions, pnl});
         cash += positions * exitPrice;
@@ -120,7 +130,7 @@ return {winRate, profitFactor, avg_win, avg_loss};
 
 }
 
-BacktestingEngine::BacktestingEngine(std::vector<Bar> bars, Strategy* strat, double startingCash, double costRate, double targetWeight) : bars(bars), strat(strat), portfolio(startingCash, costRate, targetWeight) {};
+BacktestingEngine::BacktestingEngine(std::vector<Bar> bars, Strategy* strat, double startingCash, CostModel* costM, double targetWeight) : bars(bars), strat(strat), portfolio(startingCash, costM, targetWeight) {};
 
 void BacktestingEngine::run() {
     std::vector<Bar> history;
@@ -273,6 +283,3 @@ std::vector<Bar> loadCSV(const std::string& path) {
     }
     return bars;
 }   
-
-
-

@@ -22,12 +22,13 @@ int main() {
      int n = data.size() * .7; 
      std::vector<Bar> train(data.begin(), data.begin() + n); 
      std::vector<Bar> test(data.begin() + n, data.end()); 
+     FlatCost cost(.001); 
 
     double bestSharpe = -1e9;
     int bestWindow = 0; 
     for (int window = 5; window <= 30; window += 5) {
         MeanReversion strategy(window);
-        BacktestingEngine engine(train, &strategy, 10000.0, .001, .5);
+        BacktestingEngine engine(train, &strategy, 10000.0, &cost, .5);
         engine.run();
         double s = engine.sharpe();
         if (s > bestSharpe) { bestWindow = window; bestSharpe = s; }
@@ -39,7 +40,7 @@ int main() {
         std::cout << "Sharpe:       " << engine.sharpe() << "\n";
     }
         MeanReversion strategy(bestWindow);
-        BacktestingEngine engine(test, &strategy, 10000.0, .001, .5);
+        BacktestingEngine engine(test, &strategy, 10000.0, &cost, .5);
         engine.run();
         std::cout << std::fixed << std::setprecision(4);
         std::cout << "=== Backtest results ===\n";
@@ -60,14 +61,14 @@ int main() {
 
             for (int window = 5; window <= 30; window += 5) {
                 MeanReversion strategy(window);
-                BacktestingEngine engine(train, &strategy, 10000.0, .001, .5);
+                BacktestingEngine engine(train, &strategy, 10000.0, &cost, .5);
                 engine.run();
                 double s = engine.sharpe();
                 if (s > bestSharpe) { bestWindow = window; bestSharpe = s; }
             }
 
             MeanReversion strategy(bestWindow);
-            BacktestingEngine engine(test, &strategy, 10000.0, .001, .5);
+            BacktestingEngine engine(test, &strategy, 10000.0, &cost, .5);
             engine.run();
             std::cout << std::fixed << std::setprecision(4);
             std::cout << "=== Backtest results ===\n";
@@ -75,6 +76,6 @@ int main() {
             std::cout << "Total return: " << engine.totalReturn() * 100.0 << "%\n";
             std::cout << "Max drawdown: " << engine.maxDrawdown() * 100.0 << "%\n";
             std::cout << "Sharpe:       " << engine.sharpe() << "\n";
-            
+
         }
 }
