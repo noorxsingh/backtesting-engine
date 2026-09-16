@@ -12,7 +12,7 @@ SmaCrossover::SmaCrossover(int fast, int slow) : fastWindow(fast), slowWindow(sl
 
 double SmaCrossover::sma(int window, const std::vector<Bar>& history) const {
     double sum = 0.0;
-    for (int i = history.size() - window; i < (int)history.size(); ++i) {
+    for (int i = (int)history.size() - window; i < (int)history.size(); ++i) {
         sum += history[i].close; 
     }
     return (sum/window);
@@ -38,7 +38,7 @@ MeanReversion::MeanReversion(int window) : window(window) {};
 
 double MeanReversion::sma(int window, const std::vector<Bar>& history) const {
     double sum = 0.0;
-    for (int i = history.size() - window; i < (int)history.size(); ++i) {
+    for (int i = (int)history.size() - window; i < (int)history.size(); ++i) {
         sum += history[i].close; 
     }
     return (sum/window);
@@ -77,7 +77,7 @@ double VolumeSlippage::fillPrice(double price, Decision side, double shares, dou
     } else { return price; } 
 }
 
-Portfolio::Portfolio(double startingCash, CostModel* costM, double targetWeight) : cash(startingCash), positions(0), costM(costM), targetWeight(targetWeight) {};
+Portfolio::Portfolio(double startingCash, CostModel* costM, double targetWeight) : cash(startingCash), positions(0), entryPrice(0), entryBar(0),costM(costM), targetWeight(targetWeight) {};
 
 double Portfolio::equity(double price) const {
     return cash + positions * price;
@@ -92,15 +92,14 @@ void Portfolio::execute(Decision signal, double price, double volume, int barInd
     double dollarsToDeploy = targetWeight * cash;
 
     int shares = std::floor(dollarsToDeploy / price); 
-    double spent = shares * costM->fillPrice(price, signal, shares, volume);
 
     if (signal == Decision::Buy && positions == 0 && cash > 0) {
         entryPrice = costM->fillPrice(price, signal, shares, volume); 
         positions = std::floor(dollarsToDeploy / entryPrice); 
-        cash -= spent;
+        cash -= positions * entryPrice;
         entryBar = barIndex;
     } else if (signal == Decision::Sell && positions > 0) {
-        double exitPrice = costM->fillPrice(price, signal, shares, volume);
+        double exitPrice = costM->fillPrice(price, signal, positions, volume);
         double pnl = (exitPrice - entryPrice) * positions;
         trades.push_back({entryPrice, exitPrice, positions, pnl, entryBar, barIndex});
         cash += positions * exitPrice;
@@ -172,6 +171,9 @@ double BacktestingEngine::totalReturn() const {
 }
 
 double BacktestingEngine::maxDrawdown() const {
+    if (portfolio.equityCurve.size() == 0) {
+        return 0; 
+    }
     double peak = portfolio.equityCurve[0];
     double worst = 0.0;
     for (int i = 1; i < (int)portfolio.equityCurve.size(); ++i) {
