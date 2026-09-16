@@ -19,6 +19,8 @@ struct TradeStruct {
     double exitPrice;
     double shares;
     double pnl;
+    int entryBar;
+    int exitBar; 
 };
 
 struct BlotterStats {
@@ -87,10 +89,11 @@ class Portfolio {
     double cash;
     double positions;
     double entryPrice;
+    int entryBar;
     std::vector<double> equityCurve;
     std::vector<TradeStruct> trades;
     Portfolio(double startingCash, CostModel* costM, double targetWeight);
-    void execute(Decision signal, double price, double volume);
+    void execute(Decision signal, double price, double volume, int barIndex);
     double equity(double price) const;
     void mark(double price);
     CostModel* costM; 

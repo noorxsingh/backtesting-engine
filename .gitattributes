@@ -1,0 +1,4 @@
+# index.html is a generated bundle (C++ engine compiled to WASM + inlined charting lib).
+# Exclude it from GitHub's language stats and collapse it in diffs so the repo
+# reflects its real language: C++.
+index.html linguist-generated=true

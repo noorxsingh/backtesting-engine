@@ -88,7 +88,7 @@ void Portfolio::mark(double price) {
     equityCurve.push_back(equityVal); 
 }
 
-void Portfolio::execute(Decision signal, double price, double volume) {
+void Portfolio::execute(Decision signal, double price, double volume, int barIndex) {
     double dollarsToDeploy = targetWeight * cash;
 
     int shares = std::floor(dollarsToDeploy / price); 
@@ -98,10 +98,11 @@ void Portfolio::execute(Decision signal, double price, double volume) {
         entryPrice = costM->fillPrice(price, signal, shares, volume); 
         positions = std::floor(dollarsToDeploy / entryPrice); 
         cash -= spent;
+        entryBar = barIndex;
     } else if (signal == Decision::Sell && positions > 0) {
         double exitPrice = costM->fillPrice(price, signal, shares, volume);
         double pnl = (exitPrice - entryPrice) * positions;
-        trades.push_back({entryPrice, exitPrice, positions, pnl});
+        trades.push_back({entryPrice, exitPrice, positions, pnl, entryBar, barIndex});
         cash += positions * exitPrice;
         positions = 0;
     } else {
@@ -146,9 +147,10 @@ BacktestingEngine::BacktestingEngine(std::vector<Bar> bars, Strategy* strat, dou
 void BacktestingEngine::run() {
     std::vector<Bar> history;
     Decision pending = Decision::Hold;
-    for (const Bar& bar : bars) {
-        history.push_back(bar); 
-        portfolio.execute(pending, bar.open, bar.volume);
+    for (size_t i = 0; i < bars.size(); ++i) {
+        const Bar& bar = bars[i];
+        history.push_back(bar);
+        portfolio.execute(pending, bar.open, bar.volume, (int)i);
         Decision fresh;
         if ((int)history.size() >= strat->warmup()) {
             fresh = strat->onBar(history); 
