@@ -1,4 +1,4 @@
-# C++ Backtester
+# Low-latency Backtesting Engine
 
 An event-driven backtesting engine written from scratch in modern C++, compiled to WebAssembly so it runs entirely in the browser. Write a strategy, plug in a cost model, run it on your own OHLCV data, and get a full institutional metrics suite plus an equity curve. No server, no dependencies.
 
