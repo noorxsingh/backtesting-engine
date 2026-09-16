@@ -22,7 +22,7 @@ int main() {
      int n = data.size() * .7; 
      std::vector<Bar> train(data.begin(), data.begin() + n); 
      std::vector<Bar> test(data.begin() + n, data.end()); 
-     VolumeSlippage volslip(.001, 500); 
+     FlatCost cost(.001); 
 
     double bestSharpe = -1e9;
     int bestWindow = 0; 
