@@ -63,15 +63,23 @@ class MeanReversion : public Strategy {
 
 class CostModel {
     public:
-    virtual double fillPrice(double price, Decision side) const = 0;
+    virtual double fillPrice(double price, Decision side, double shares, double volume) const = 0;
     virtual ~CostModel() = default; 
 };
 
 class FlatCost : public CostModel {
     public:
     double rate;
-    double fillPrice(double price, Decision side) const override; 
+    double fillPrice(double price, Decision side, double shares, double volume) const override; 
     FlatCost(double rate); 
+};
+
+class VolumeSlippage : public CostModel {
+    public: 
+    double rate;
+    double steepness; 
+    double fillPrice(double price, Decision side, double shares, double volume) const override;
+    VolumeSlippage(double rate, double steepness);
 };
 
 class Portfolio {
@@ -82,7 +90,7 @@ class Portfolio {
     std::vector<double> equityCurve;
     std::vector<TradeStruct> trades;
     Portfolio(double startingCash, CostModel* costM, double targetWeight);
-    void execute(Decision signal, double price);
+    void execute(Decision signal, double price, double volume);
     double equity(double price) const;
     void mark(double price);
     CostModel* costM; 

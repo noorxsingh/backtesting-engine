@@ -57,7 +57,7 @@ Decision MeanReversion::onBar(const std::vector<Bar>& history) {
 
 FlatCost::FlatCost(double rate) : rate(rate) {}; 
 
-double FlatCost::fillPrice(double price, Decision side) const {
+double FlatCost::fillPrice(double price, Decision side, double shares, double volume) const {
     if (side == Decision::Buy) {
         return price * (1 + rate);
     } else if (side == Decision::Sell) {
@@ -65,6 +65,17 @@ double FlatCost::fillPrice(double price, Decision side) const {
     } else { return price; } 
 }
 
+VolumeSlippage::VolumeSlippage(double rate, double steepness) : rate(rate), steepness(steepness) {}; 
+
+double VolumeSlippage::fillPrice(double price, Decision side, double shares, double volume) const {
+    double participation = shares / volume;
+    double push = rate + steepness * participation; 
+    if (side == Decision::Buy) {
+        return price * (1 + push);
+    } else if (side == Decision::Sell) {
+        return price * (1 - push);
+    } else { return price; } 
+}
 
 Portfolio::Portfolio(double startingCash, CostModel* costM, double targetWeight) : cash(startingCash), positions(0), costM(costM), targetWeight(targetWeight) {};
 
@@ -77,18 +88,18 @@ void Portfolio::mark(double price) {
     equityCurve.push_back(equityVal); 
 }
 
-void Portfolio::execute(Decision signal, double price) {
+void Portfolio::execute(Decision signal, double price, double volume) {
     double dollarsToDeploy = targetWeight * cash;
 
-    int shares = std::floor(dollarsToDeploy / costM->fillPrice(price, signal)); 
-    double spent = shares * costM->fillPrice(price, signal);
+    int shares = std::floor(dollarsToDeploy / price); 
+    double spent = shares * costM->fillPrice(price, signal, shares, volume);
 
     if (signal == Decision::Buy && positions == 0 && cash > 0) {
-        entryPrice = costM->fillPrice(price, signal); 
+        entryPrice = costM->fillPrice(price, signal, shares, volume); 
         positions = std::floor(dollarsToDeploy / entryPrice); 
         cash -= spent;
     } else if (signal == Decision::Sell && positions > 0) {
-        double exitPrice = costM->fillPrice(price, signal);
+        double exitPrice = costM->fillPrice(price, signal, shares, volume);
         double pnl = (exitPrice - entryPrice) * positions;
         trades.push_back({entryPrice, exitPrice, positions, pnl});
         cash += positions * exitPrice;
@@ -137,7 +148,7 @@ void BacktestingEngine::run() {
     Decision pending = Decision::Hold;
     for (const Bar& bar : bars) {
         history.push_back(bar); 
-        portfolio.execute(pending, bar.open);
+        portfolio.execute(pending, bar.open, bar.volume);
         Decision fresh;
         if ((int)history.size() >= strat->warmup()) {
             fresh = strat->onBar(history); 
