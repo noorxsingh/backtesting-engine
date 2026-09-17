@@ -101,6 +101,33 @@ class Portfolio {
     BlotterStats tradeStats() const; 
 };  
 
+template<typename StrategyT> 
+class TemplatedEngine {
+    StrategyT strat;
+    std::vector<Bar> bars; 
+
+    public:
+    Portfolio portfolio;
+    TemplatedEngine(StrategyT strat, std::vector<Bar> bars, double startingCash, CostModel* costM, double targetWeight) : strat(strat), bars(bars), portfolio(startingCash, costM, targetWeight) {};
+    void run() {
+        std::vector<Bar> history; 
+        Decision pending = Decision::Hold;
+        for (size_t i = 0; i < bars.size(); ++i) {
+            const Bar& bar = bars[i];
+            history.push_back(bar);
+            portfolio.execute(pending, bar.open, bar.volume, (int)i);
+            Decision fresh;
+            if ((int)history.size() >= strat.warmup()) {
+                fresh = strat.onBar(history); 
+            } else {
+                fresh = Decision::Hold; 
+            }
+            pending = fresh; 
+            portfolio.mark(bar.close);
+        }
+    }
+};
+
 class BacktestingEngine {
     public:
     BacktestingEngine(std::vector<Bar> bars, Strategy* strat, double startingCash, CostModel* costM, double targetWeight);
