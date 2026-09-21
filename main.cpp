@@ -19,11 +19,11 @@ static std::vector<Bar> makeSampleData(int n) {
 }
 
 int main() {
-     std::vector<Bar> data = loadCSV("data.csv");
-     int n = data.size() * .7; 
-     std::vector<Bar> train(data.begin(), data.begin() + n); 
-     std::vector<Bar> test(data.begin() + n, data.end()); 
-     FlatCost cost(.001); 
+    std::vector<Bar> data = loadCSV("data.csv");
+    int n = data.size() * .7; 
+    std::vector<Bar> train(data.begin(), data.begin() + n); 
+    std::vector<Bar> test(data.begin() + n, data.end()); 
+    FlatCost cost(.001); 
 
     double bestSharpe = -1e9;
     int bestWindow = 0; 

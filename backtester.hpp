@@ -3,6 +3,8 @@
 #include <vector>
 #include <string> 
 
+
+
 struct Bar {
     public:
     double open;

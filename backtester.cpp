@@ -7,7 +7,6 @@
 #include <fstream> 
 #include <sstream> 
 
-
 SmaCrossover::SmaCrossover(int fast, int slow) : fastWindow(fast), slowWindow(slow) {};
 
 double SmaCrossover::sma(int window, const std::vector<Bar>& history) const {
